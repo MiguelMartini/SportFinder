@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class UsuarioController extends Controller
 {
@@ -89,4 +90,28 @@ class UsuarioController extends Controller
             return response()->json(['message' => 'Erro ao deletar usuário', 'detalhes' => $e->getMessage()], 500);
         }
     }
+
+public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'senha' => 'required|string',
+    ]);
+
+    $usuario = Usuario::where('email', $request->email)->first();
+
+    if (! $usuario || ! Hash::check($request->senha, $usuario->senha)) {
+        throw ValidationException::withMessages([
+            'email' => ['As credenciais estão incorretas.'],
+        ]);
+    }
+
+    $token = $usuario->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'token' => $token,
+        'usuario' => $usuario
+    ]);
+}
+
 }
